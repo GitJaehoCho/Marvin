@@ -1,94 +1,93 @@
-import lgpio
+import RPi.GPIO as GPIO
 import time
+import threading
 import math
 
-class MotorController:
-    def __init__(self, gpio_chip=0, cpr=48):
-        """Initialize the motor controller."""
-        self.h = lgpio.gpiochip_open(gpio_chip)
-        self.encoder_position = 0
-        self.last_a_state = None
-        self.last_b_state = None
-        self.cpr = cpr  # Counts per revolution
-        self.initialize_gpio()
-        
-    def initialize_gpio(self):
-        """Claim the GPIOs for motor control and encoder inputs."""
-        lgpio.gpio_claim_output(self.h, 17)  # Motor IN1
-        lgpio.gpio_claim_output(self.h, 27)  # Motor IN2
-        lgpio.gpio_claim_input(self.h, 22)   # Encoder A
-        lgpio.gpio_claim_input(self.h, 23)   # Encoder B
-        lgpio.gpio_claim_output(self.h, 18)  # PWM pin for EN_A
+# Setup GPIO
+GPIO.setmode(GPIO.BCM)
+GPIO.setup(17, GPIO.OUT)  # Motor IN1
+GPIO.setup(27, GPIO.OUT)  # Motor IN2
+GPIO.setup(22, GPIO.IN, pull_up_down=GPIO.PUD_UP)  # Encoder A
+GPIO.setup(23, GPIO.IN, pull_up_down=GPIO.PUD_UP)  # Encoder B
+GPIO.setup(18, GPIO.OUT)  # PWM pin for EN_A
 
-    def update_encoder_position(self):
-        """Update the encoder position by reading the encoder pins directly."""
-        a_state = lgpio.gpio_read(self.h, 22)
-        b_state = lgpio.gpio_read(self.h, 23)
+# Initialize PWM on EN_A
+pwm = GPIO.PWM(18, 1000)  # Set PWM frequency to 1 kHz
+pwm.start(20)  # Start PWM at 50% duty cycle for moderate speed
 
-        if self.last_a_state is not None and self.last_b_state is not None:
-            if a_state != self.last_a_state or b_state != self.last_b_state:
-                # Determine direction of rotation
-                if (self.last_a_state and not self.last_b_state and a_state and b_state) or \
-                   (self.last_a_state and self.last_b_state and not a_state and b_state) or \
-                   (not self.last_a_state and self.last_b_state and not a_state and not b_state) or \
-                   (not self.last_a_state and not self.last_b_state and a_state and not b_state):
-                    self.encoder_position += 1
-                else:
-                    self.encoder_position -= 1
+# Global variables
+encoder_position = 0
+current_angle = 0  # Current angle in radians
+desired_angle = 0  # Desired angle in radians
+cpr = 48  # Counts per revolution
+lock = threading.Lock()
 
-        self.last_a_state = a_state
-        self.last_b_state = b_state
-
-    def motor_control(self, direction):
-        """Set motor direction."""
-        if direction == 'forward':
-            lgpio.gpio_write(self.h, 17, 1)
-            lgpio.gpio_write(self.h, 27, 0)
-        elif direction == 'reverse':
-            lgpio.gpio_write(self.h, 17, 0)
-            lgpio.gpio_write(self.h, 27, 1)
+# Interrupt callback for encoder
+def encoder_callback(channel):
+    global encoder_position
+    if GPIO.input(22):
+        if GPIO.input(23):
+            encoder_position += 1
         else:
-            self.motor_stop()
+            encoder_position -= 1
+    else:
+        if not GPIO.input(23):
+            encoder_position += 1
+        else:
+            encoder_position -= 1
 
-    def motor_stop(self):
-        """Stop motor and PWM signal."""
-        lgpio.tx_pwm(self.h, 18, 1000, 0)  # Stop PWM
-        lgpio.gpio_write(self.h, 17, 0)
-        lgpio.gpio_write(self.h, 27, 0)
+GPIO.add_event_detect(22, GPIO.BOTH, callback=encoder_callback)
 
-    def run(self):
-        """Main control loop."""
-        lgpio.tx_pwm(self.h, 18, 1000, 60)  # 1 kHz frequency, 20% duty cycle
-        desired_angle = 0  # Start at angle 0
-        input_interval = 0.1  # Interval for updating desired angle
-        last_input_time = time.time()
+def motor_forward():
+    GPIO.output(17, GPIO.HIGH)
+    GPIO.output(27, GPIO.LOW)
 
-        try:
-            while True:
-                if time.time() - last_input_time >= input_interval:
-                    desired_angle += math.radians(10)  # Increment angle by 10 degrees
-                    last_input_time = time.time()
+def motor_reverse():
+    GPIO.output(17, GPIO.LOW)
+    GPIO.output(27, GPIO.HIGH)
 
-                self.update_encoder_position()
-                target_position = int((desired_angle * self.cpr) / (2 * math.pi))
-                if self.encoder_position < target_position:
-                    self.motor_control('forward')
-                elif self.encoder_position > target_position:
-                    self.motor_control('reverse')
-                else:
-                    self.motor_stop()
+def motor_stop():
+    pwm.ChangeDutyCycle(0)
+    GPIO.output(17, GPIO.LOW)
+    GPIO.output(27, GPIO.LOW)
 
-                # Print current encoder position
-                print(f"Current Encoder Position: {self.encoder_position}")
-                
-                time.sleep(0.05)  # Loop at 20 Hz
+# Thread to simulate receiving live input of radians
+def input_simulation():
+    global desired_angle
+    while True:
+        # Simulate a new desired angle in radians
+        with lock:
+            desired_angle += 3
+        time.sleep(0.0001)  # Adjust frequency of new inputs here
 
-        except KeyboardInterrupt:
-            self.motor_stop()
-        finally:
-            lgpio.gpiochip_close(self.h)
+# Thread to control motor based on desired angle
+def motor_control():
+    global current_angle, encoder_position, desired_angle
+    while True:
+        with lock:
+            target_position = int((desired_angle * cpr) / (2 * math.pi))
+        
+        if encoder_position < target_position:
+            motor_forward()
+        elif encoder_position > target_position:
+            motor_reverse()
+        else:
+            motor_stop()
+        
+        # Update current angle based on encoder position
+        with lock:
+            current_angle = (encoder_position * 2 * math.pi) / cpr
+        time.sleep(0.05)  # Control loop frequency
+
+def main():
+    threading.Thread(target=input_simulation).start()  # Start input simulation thread
+    threading.Thread(target=motor_control).start()  # Start motor control thread
+
+    try:
+        while True:  # Main loop to keep the program running
+            time.sleep(10)
+    finally:
+        GPIO.cleanup()
 
 if __name__ == "__main__":
-    mc = MotorController()
-    mc.run()
-
+    main()
