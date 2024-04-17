@@ -1,2 +1,6 @@
 .vscode
 open_manipulator_github
+
+log
+build
+install
