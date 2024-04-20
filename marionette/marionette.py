@@ -37,7 +37,7 @@ def stop_motor():
     logging.info("Motor stopped")
 
 mp_pose = mp.solutions.pose
-pose = mp_pose.Pose(static_image_mode=False, model_complexity=2, smooth_landmarks=True,
+pose = mp_pose.Pose(static_image_mode=False, model_complexity=0, smooth_landmarks=True,
                     enable_segmentation=False, min_detection_confidence=0.5, min_tracking_confidence=0.5)
 drawing_utils = mp.solutions.drawing_utils
 

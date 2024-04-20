@@ -27,7 +27,7 @@ def monitor_encoder():
                 count += 1
                 logging.info(f"Change detected: A={a_state}, B={b_state}, Count={count}")
 
-            sleep(0.01)  # Check every 10ms
+            sleep(0.1)  # Check every 10ms
 
     except KeyboardInterrupt:
         logging.info("Stopped monitoring the encoder.")
@@ -35,3 +35,4 @@ def monitor_encoder():
 
 if __name__ == "__main__":
     monitor_encoder()
+

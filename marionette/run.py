@@ -1,29 +1,34 @@
-from pose_detect import PoseDetector
+# run_pose_detection.py
+from pose_landmarker import PoseLandmarker
 
-def main():
-    detector = PoseDetector(
+def run_detection():
+    # Configuration as before
+    landmarker = PoseLandmarker(
         model='pose_landmarker_lite.task',
         num_poses=1,
         min_pose_detection_confidence=0.5,
         min_pose_presence_confidence=0.5,
         min_tracking_confidence=0.5,
-        output_segmentation_masks=False,
+        output_segmentation_masks=True,
         camera_id=0,
         width=1280,
-        height=960)
-    detector.start()
+        height=720
+    )
 
     try:
-        while True:
-            detector.run_once()
-            result = detector.get_latest_result()
-            if result:
-                print("Detected pose:", result)
-            # Additional processing can be done here
-    except KeyboardInterrupt:
-        pass
+        # Start the detection process
+        landmarker.run_detection()
     finally:
-        detector.stop()
+        # Properly release all resources
+        landmarker.close()
+    
+    # Retrieve and process the detection results
+    results = landmarker.get_detection_results()
+    if results:
+        print("Detection results retrieved successfully.")
+        # Further processing of results can be done here
+    else:
+        print("No detection results available.")
 
 if __name__ == '__main__':
-    main()
+    run_detection()
