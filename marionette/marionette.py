@@ -37,6 +37,7 @@ class PoseDetector:
             static_image_mode=False, model_complexity=0, smooth_landmarks=False,
             enable_segmentation=False, min_detection_confidence=0.5, min_tracking_confidence=0.5)
         self.drawing_utils = mp.solutions.drawing_utils
+        self.motor_paused = False  # Attribute to control motor state
 
     def run(self):
         cap = cv2.VideoCapture(0)
@@ -68,8 +69,17 @@ class PoseDetector:
                 cv2.putText(flipped_image, f'FPS: {fps}', (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 0), 2, cv2.LINE_AA)
                 
                 cv2.imshow('MediaPipe Pose', flipped_image)
-                if cv2.waitKey(5) & 0xFF == 27:
+                
+                key = cv2.waitKey(5)
+                if key == 27:  # ESC key to break the loop
                     break
+                if key == 32:  # Space bar to toggle pause
+                    self.motor_paused = not self.motor_paused
+                    if self.motor_paused:
+                        self.motor_controller.stop_motor()
+                        logging.info("Motor paused")
+                    else:
+                        logging.info("Motor resumed")
         finally:
             cap.release()
             cv2.destroyAllWindows()
@@ -82,7 +92,8 @@ class PoseDetector:
             self.draw_landmarks(image, results.pose_landmarks)
             angle = self.left_shoulder_angle(results.pose_world_landmarks)
             logging.info(f"Left shoulder angle: {np.degrees(angle)} degrees")
-            self.control_motor(angle)
+            if not self.motor_paused:
+                self.control_motor(angle)
         return image
 
     def draw_landmarks(self, image, landmarks):
