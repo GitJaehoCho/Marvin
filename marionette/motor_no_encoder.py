@@ -11,17 +11,18 @@ pwm_device = PWMOutputDevice(18, frequency=1000)
 
 # Global variables
 current_speed = 0
+max_speed = .8  # Maximum speed of the motor
 
 def move_forward():
     global current_speed
-    current_speed = 0.5  # Set speed to half of the maximum
+    current_speed = max_speed  # Set speed to half of the maximum
     motor.forward(current_speed)
     pwm_device.value = current_speed
     logging.info("Motor moving forward")
 
 def move_backward():
     global current_speed
-    current_speed = 0.5  # Set speed to half of the maximum
+    current_speed = max_speed  # Set speed to half of the maximum
     motor.backward(current_speed)
     pwm_device.value = current_speed
     logging.info("Motor moving backward")

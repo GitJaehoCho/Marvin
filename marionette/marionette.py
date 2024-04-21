@@ -37,7 +37,7 @@ def stop_motor():
     logging.info("Motor stopped")
 
 mp_pose = mp.solutions.pose
-pose = mp_pose.Pose(static_image_mode=False, model_complexity=0, smooth_landmarks=True,
+pose = mp_pose.Pose(static_image_mode=False, model_complexity=0, smooth_landmarks=False,
                     enable_segmentation=False, min_detection_confidence=0.5, min_tracking_confidence=0.5)
 drawing_utils = mp.solutions.drawing_utils
 
@@ -90,8 +90,11 @@ def left_shoulder_angle(landmarks):
 
 def control_motor(angle):
     # Map angle to motor speed
-    speed = min(1.0, max(0.0, angle / np.pi))  # Normalize angle to range [0, 1]
-    if angle > np.pi / 2:  # Move backward if angle is greater than 90 degrees
+    speed = min(1.0, max(0.0, # clipping to 0-1
+                         np.sqrt(1.5 * (abs((angle - np.pi / 2) / (np.pi / 2))))
+                         ))
+    logging.info(f'Speed: {speed}')
+    if angle < np.pi / 2:  # Move backward if angle is greater than 90 degrees
         move_backward(speed)
     else:  # Move forward otherwise
         move_forward(speed)
