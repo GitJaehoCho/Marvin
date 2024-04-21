@@ -4,6 +4,7 @@ import mediapipe as mp
 from vector import vector_from_points, calculate_angle
 import logging
 from gpiozero import Motor, PWMOutputDevice
+import time
 
 class MotorController:
     def __init__(self, forward_pin=17, backward_pin=27, pwm_pin=18, pwm_frequency=1000):
@@ -43,6 +44,9 @@ class PoseDetector:
             logging.error("Cannot open webcam")
             return
 
+        prev_frame_time = time.time()
+        fps = 0
+
         try:
             while cap.isOpened():
                 success, image = cap.read()
@@ -50,8 +54,20 @@ class PoseDetector:
                     logging.warning("Ignoring empty camera frame.")
                     continue
 
+                current_frame_time = time.time()
+                duration = current_frame_time - prev_frame_time
+                prev_frame_time = current_frame_time
+                if duration > 0:
+                    fps = round(1 / duration, 2)
+
                 image = self.process_image(image)
-                cv2.imshow('MediaPipe Pose', cv2.flip(image, 1))
+                  
+                flipped_image = cv2.flip(image, 1)
+                
+                # Display FPS on frame
+                cv2.putText(flipped_image, f'FPS: {fps}', (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 0), 2, cv2.LINE_AA)
+                
+                cv2.imshow('MediaPipe Pose', flipped_image)
                 if cv2.waitKey(5) & 0xFF == 27:
                     break
         finally:
