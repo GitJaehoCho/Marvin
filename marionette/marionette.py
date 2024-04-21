@@ -11,24 +11,31 @@ class MotorController:
         self.motor = Motor(forward=forward_pin, backward=backward_pin, pwm=True)
         self.pwm_device = PWMOutputDevice(pwm_pin, frequency=pwm_frequency)
         self.current_speed = 0
+        self.motor_state = "Stopped"  # Default state
 
     def move_forward(self, speed):
         self.current_speed = speed
         self.motor.forward(speed)
         self.pwm_device.value = speed
+        self.motor_state = "Moving Forward"
         logging.info(f"Motor moving forward at speed {speed}")
 
     def move_backward(self, speed):
         self.current_speed = speed
         self.motor.backward(speed)
         self.pwm_device.value = speed
+        self.motor_state = "Moving Backward"
         logging.info(f"Motor moving backward at speed {speed}")
 
     def stop_motor(self):
         self.current_speed = 0
         self.motor.stop()
         self.pwm_device.value = 0
+        self.motor_state = "Stopped"
         logging.info("Motor stopped")
+
+    def get_motor_status(self):
+        return self.motor_state
 
 class PoseDetector:
     def __init__(self, motor_controller):
@@ -62,12 +69,17 @@ class PoseDetector:
                     fps = round(1 / duration, 2)
 
                 image = self.process_image(image)
-                  
-                flipped_image = cv2.flip(image, 1)
                 
+                flipped_image = cv2.flip(image, 1)
+
                 # Display FPS on frame
                 cv2.putText(flipped_image, f'FPS: {fps}', (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 0), 2, cv2.LINE_AA)
-                
+                # Display Motor Status
+                motor_status = self.motor_controller.get_motor_status()
+                if self.motor_paused:
+                    motor_status = "Paused"
+                cv2.putText(flipped_image, f'Motor Status: {motor_status}', (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, cv2.LINE_AA)
+
                 cv2.imshow('MediaPipe Pose', flipped_image)
                 
                 key = cv2.waitKey(5)
