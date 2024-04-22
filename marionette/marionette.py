@@ -11,7 +11,7 @@ class MotorController:
         self.motor = Motor(forward=forward_pin, backward=backward_pin, pwm=True)
         self.pwm_device = PWMOutputDevice(pwm_pin, frequency=pwm_frequency)
         self.current_speed = 0
-        self.motor_state = "Stopped"  # Default state
+        self.motor_state = "Waiting for Person"  # Default state
 
     def move_forward(self, speed):
         self.current_speed = speed
@@ -73,12 +73,12 @@ class PoseDetector:
                 flipped_image = cv2.flip(image, 1)
 
                 # Display FPS on frame
-                cv2.putText(flipped_image, f'FPS: {fps}', (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 0), 2, cv2.LINE_AA)
+                cv2.putText(flipped_image, f'FPS: {fps}', (10, 50), cv2.FONT_HERSHEY_SIMPLEX, .5, (0, 0, 0), 1, cv2.LINE_AA)
                 # Display Motor Status
                 motor_status = self.motor_controller.get_motor_status()
                 if self.motor_paused:
                     motor_status = "Paused"
-                cv2.putText(flipped_image, f'Motor Status: {motor_status}', (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, cv2.LINE_AA)
+                cv2.putText(flipped_image, f'{motor_status}', (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2, cv2.LINE_AA)
 
                 cv2.imshow('MediaPipe Pose', flipped_image)
                 
