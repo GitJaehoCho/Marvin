@@ -34,7 +34,7 @@ class MotorController:
             self.current_speed = 0
             self.motor.stop()
             self.pwm_device.value = 0
-            self.update_motor_state("No Person")
+            self.update_motor_state("Stopped")
 
     def update_motor_state(self, state):
         if self.motor_state != state:
@@ -81,23 +81,23 @@ class PoseDetector:
                 if key == 27:  # ESC key to exit
                     break
                 elif key == 32:  # Space bar to pause/resume
-                    self.motor_paused = not self.motor_paused
-                    if self.motor_paused:
-                        self.motor_controller.stop_motor()
-                        self.motor_controller.update_motor_state("Paused")
-                    else:
-                        self.motor_controller.update_motor_state("Resumed")
+                    self.toggle_pause()
 
         finally:
             cap.release()
             cv2.destroyAllWindows()
 
     def process_image(self, image):
-        if not self.motor_paused:
-            image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-            results = self.pose.process(image_rgb)
-            self.draw_landmarks(image, results.pose_landmarks)
-            self.handle_pose(results)
+        image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        results = self.pose.process(image_rgb)
+        self.draw_landmarks(image, results.pose_landmarks)
+        if results.pose_landmarks:
+            angle = self.left_shoulder_angle(results.pose_world_landmarks)
+            if not self.motor_paused:
+                self.control_motor(angle)
+        elif not self.motor_paused:  # Ensure it is not paused before updating to "No Pose Detected"
+            self.motor_controller.stop_motor()
+            self.motor_controller.update_motor_state("No Pose Detected")
         return image
 
     def draw_landmarks(self, image, landmarks):
@@ -106,13 +106,6 @@ class PoseDetector:
                 image, landmarks, mp.solutions.pose.POSE_CONNECTIONS,
                 landmark_drawing_spec=self.drawing_utils.DrawingSpec(color=(245, 117, 66), thickness=2, circle_radius=2),
                 connection_drawing_spec=self.drawing_utils.DrawingSpec(color=(245, 66, 230), thickness=2, circle_radius=2))
-
-    def handle_pose(self, results):
-        if results.pose_landmarks and not self.motor_paused:
-            angle = self.left_shoulder_angle(results.pose_world_landmarks)
-            self.control_motor(angle)
-        elif not results.pose_landmarks:
-            self.motor_controller.stop_motor()
 
     def left_shoulder_angle(self, landmarks):
         left_shoulder = landmarks.landmark[mp.solutions.pose.PoseLandmark.LEFT_SHOULDER]
@@ -139,6 +132,14 @@ class PoseDetector:
         motor_status = self.motor_controller.get_motor_status()
         cv2.putText(image, motor_status, (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2, cv2.LINE_AA)
         cv2.imshow('MediaPipe Pose', image)
+
+    def toggle_pause(self):
+        self.motor_paused = not self.motor_paused
+        if self.motor_paused:
+            self.motor_controller.stop_motor()
+            self.motor_controller.update_motor_state("Paused")
+        else:
+            self.motor_controller.update_motor_state("Resumed")
 
 def main():
     pose_detector = PoseDetector(MotorController())
