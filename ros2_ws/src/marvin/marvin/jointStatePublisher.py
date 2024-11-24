@@ -6,7 +6,10 @@ from sensor_msgs.msg import JointState
 from std_msgs.msg import Header
 
 class JointStatePublisher(Node):
-
+    """
+    Subscribes to: [topic] /left_shoulder_flexion, /left_shoulder_adduction, /left_elbow_flexion,
+                    /right_shoulder_flexion, /right_shoulder_adduction, /right_elbow_flexion
+    """
     def __init__(self):
         super().__init__('joint_state_publisher')
         

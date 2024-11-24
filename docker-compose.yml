@@ -5,10 +5,10 @@ services:
     container_name: ros2_jazzy
     environment:
       - DISPLAY=${DISPLAY}                # Required for GUI applications
-      - XDG_RUNTIME_DIR=/tmp/runtime-root # Required for GUI applications
+      # - XDG_RUNTIME_DIR=/tmp/runtime-root # Required for GUI applications
     volumes:
       - /tmp/.X11-unix:/tmp/.X11-unix     # Required for GUI applications
-      - ./ros2_ws:/root/ros2_ws           # Mount the workspace
+      - ./:/root/marvin                         # Mount the workspace
     privileged: true
     stdin_open: true
     tty: true
