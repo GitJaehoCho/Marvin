@@ -17,6 +17,7 @@ setup(
         (os.path.join('share', package_name, 'urdf'), glob('urdf/*')),
         (os.path.join('share', package_name, 'meshes', 'stl'), glob('meshes/stl/*')),
         (os.path.join('share', package_name, 'rviz'), glob('rviz/*')),
+        (os.path.join('share', package_name, 'config'), glob('config/*')),
     ],
     install_requires=['setuptools'],
     zip_safe=True,
@@ -35,6 +36,7 @@ setup(
             'jointGoalPublisher = marvin.jointGoalPublisher:main',
             'displayJointStates = marvin.displayJointStates:main',
             'operation = marvin.operation:main',
+            'moveit = marvin.moveit:main',
         ],
     },
 )

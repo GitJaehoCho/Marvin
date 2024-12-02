@@ -1,0 +1,25 @@
+moveit_setup_assistant_config:
+  urdf:
+    package: marvin
+    relative_path: urdf/marvin.urdf
+  srdf:
+    relative_path: config/marvin.srdf
+  package_settings:
+    author_name: Sophia Klymchuk
+    author_email: sophia.klymchuk@cooper.edu
+    generated_timestamp: 1733107557
+  control_xacro:
+    command:
+      - position
+    state:
+      - position
+      - velocity
+  modified_urdf:
+    xacros:
+      - control_xacro
+  control_xacro:
+    command:
+      - position
+    state:
+      - position
+      - velocity

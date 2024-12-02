@@ -1,0 +1,69 @@
+<?xml version="1.0"?>
+<!-- Open_Manipulator Chain -->
+<robot name="marvin" xmlns:xacro="http://ros.org/wiki/xacro">
+
+  <!-- Import Rviz colors -->
+  <xacro:include filename="/home/jaeho/marvin/ros2_ws/src/marvin/urdf2/materials.xacro" />
+
+  <!-- Import all Gazebo-customization elements, including Gazebo colors -->
+  <!--xacro:include filename="/home/jaeho/marvin/ros2_ws/src/marvin/urdf2/open_manipulator.gazebo.xacro" /-->
+
+  <!-- Import Transmission -->
+  <xacro:include filename="/home/jaeho/marvin/ros2_ws/src/marvin/urdf2/open_manipulator.transmission.xacro" />
+
+  <!-- Import URDF -->
+  <!--xacro:include filename="/home/jaeho/marvin/ros2_ws/src/marvin/urdf2/open_manipulator.urdf.xacro" /-->
+  <xacro:include filename="/home/jaeho/marvin/ros2_ws/src/marvin/urdf2/single_arm.xacro" />
+
+  <!-- World -->
+  <link name="world"/>
+
+  <!-- World fixed joint-->
+  <joint name="world_fixed" type="fixed">
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+    <parent link="world"/>
+    <child link="torso"/>
+  </joint>
+
+  <!-- Torso Link -->
+  <link name="torso">
+    <collision name="Cube">
+      <origin rpy="0.00000 0.00000 0.00000" xyz="0.00000 0.00000 -0.22261"/>
+      <geometry>
+        <box size="0.16000 0.06000 0.60000"/>
+      </geometry>
+    </collision>
+    <visual name="Cube">
+      <origin rpy="0.00000 0.00000 0.00000" xyz="0.00000 0.00000 -0.22261"/>
+      <geometry>
+        <box size="0.16000 0.06000 0.60000"/>
+      </geometry>
+    </visual>
+    <parent link="world"/>
+  </link>
+
+  <xacro:property name="left_arm_origin_xyz" value="0.08 0 0"/>
+  <joint name="left_arm_joint" type="fixed">
+    <parent link="torso"/>
+    <child link="link1_left"/>
+    <origin xyz="${left_arm_origin_xyz}" rpy="0 1.5708 0"/>
+  </joint>
+
+  <xacro:property name="right_arm_origin_xyz" value="-0.08 0 0"/>
+  <joint name="right_arm_joint" type="fixed">
+    <parent link="torso"/>
+    <child link="link1_right"/>
+    <origin xyz="${right_arm_origin_xyz}" rpy="0 1.5708 3.1415926535"/> <!-- Rotate by pi -->
+  </joint>
+
+  <xacro:arm name="left"/>
+   <!-- Left Arm -->
+ 
+
+  <xacro:arm name="right"/>
+  <!-- Right Arm (Mirrored) -->
+  
+
+
+
+</robot>
